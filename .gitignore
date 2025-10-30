@@ -2,6 +2,8 @@
 config.json
 .env
 seen_offers.json
+last_message.json
+cron.log
 
 # Python
 __pycache__/

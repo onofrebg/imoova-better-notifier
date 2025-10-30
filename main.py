@@ -5,6 +5,8 @@ import argparse
 import unicodedata
 import json
 import os
+import time
+from datetime import datetime, timedelta
 
 # Default configuration values
 DEFAULT_CONFIG_FILE = "config.json"
@@ -15,7 +17,7 @@ def load_config():
     config = {
         "telegram_token": os.getenv("TELEGRAM_TOKEN", ""),
         "telegram_chats": [c.strip() for c in os.getenv("TELEGRAM_CHATS", "").split(",") if c.strip()],
-        "default_cities": [c.strip() for c in os.getenv("DEFAULT_CITIES", "valencia,manises,madrid,zurich").split(",") if c.strip()]
+        "default_cities": [c.strip() for c in os.getenv("DEFAULT_CITIES", "").split(",") if c.strip()]
     }
     
     config_file = os.getenv("CONFIG_FILE", DEFAULT_CONFIG_FILE)
@@ -114,6 +116,39 @@ def send_telegram_message(token: str, chat_id: str, text: str):
         return False, str(e)
 
 
+def update_last_message_time():
+    """Update the timestamp of the last sent message."""
+    try:
+        with open("last_message.json", "w", encoding='utf-8') as f:
+            json.dump({"last_message_time": time.time()}, f)
+    except Exception:
+        pass
+
+def get_last_message_time():
+    """Get the timestamp of the last sent message."""
+    try:
+        with open("last_message.json", "r", encoding='utf-8') as f:
+            data = json.load(f)
+            return data.get("last_message_time")
+    except Exception:
+        return None
+
+def check_and_send_alive_message(token: str, chats):
+    """Check if we need to send a 'still alive' message and send it if needed."""
+    last_time = get_last_message_time()
+    if last_time is None:
+        update_last_message_time()
+        return
+    
+    now = time.time()
+    week_ago = now - (7 * 24 * 60 * 60)  # 7 days in seconds
+    
+    if last_time < week_ago:
+        text = "🤖 ¡Sigo vivo! No he encontrado nuevas ofertas de campers esta semana, pero sigo buscando."
+        results = send_to_chats(token, chats, text)
+        if any(ok for _, ok, _ in results):
+            update_last_message_time()
+
 def send_to_chats(token: str, chats, text: str):
     """Send `text` to multiple chat ids. Returns a list of (chat_id, ok, resp) tuples."""
     results = []
@@ -122,6 +157,8 @@ def send_to_chats(token: str, chats, text: str):
     for chat in chats:
         ok, resp = send_telegram_message(token, chat, text)
         results.append((chat, ok, resp))
+    if any(ok for _, ok, _ in results):
+        update_last_message_time()
     return results
 
 
@@ -157,7 +194,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scrape imoova relocations and optionally filter by cities")
     parser.add_argument("--config", help="Path to configuration file",
                         default=DEFAULT_CONFIG_FILE)
-    parser.add_argument("--cities", help="Comma-separated list of cities to filter by (e.g. Madrid,Valencia,Zurich)",
+    parser.add_argument("--cities", help="Comma-separated list of cities to filter by (e.g. Madrid,Barcelona,Zurich)",
                         default=",".join(config["default_cities"]))
     parser.add_argument("--telegram-token", help="Telegram bot token to send notifications", 
                         default=config["telegram_token"])
@@ -214,6 +251,9 @@ if __name__ == "__main__":
 
     # If telegram args provided, send notifications for any new offers (not in seen file)
     if args.telegram_token and chats:
+        # Check if we need to send a "still alive" message
+        check_and_send_alive_message(args.telegram_token, chats)
+        
         seen = load_seen(args.seen_file)
         new = [c for c in filtered if c.get('id') and c.get('id') not in seen]
         for c in new:
