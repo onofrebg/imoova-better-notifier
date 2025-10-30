@@ -203,6 +203,8 @@ if __name__ == "__main__":
                         default=",".join(str(chat) for chat in config["telegram_chats"]))
     parser.add_argument("--seen-file", help="Path to seen offers JSON file", 
                         default=DEFAULT_SEEN_FILE)
+    parser.add_argument("-q", "--quiet", help="Suppress terminal messages for already notified campers",
+                        action="store_true")
     args = parser.parse_args()
 
     # Build list of chat ids to send notifications to (comma-separated)
@@ -247,8 +249,10 @@ if __name__ == "__main__":
     for camper in filtered:
         camper_id = camper.get('id')
         was_seen = camper_id in seen if camper_id else False
-        status = "🔔 Already notified" if was_seen else "🆕 Not yet notified"
-        print(f"[{camper_id}] Origin: {camper['origin']} -> Arrival: {camper['arrival']} | {camper.get('start','')} - {camper.get('end','')} | {camper.get('model','')} | {status}")
+        # Only print if not quiet mode or if it's a new offer
+        if not args.quiet or not was_seen:
+            status = "🔔 Already notified" if was_seen else "🆕 Not yet notified"
+            print(f"[{camper_id}] Origin: {camper['origin']} -> Arrival: {camper['arrival']} | {camper.get('start','')} - {camper.get('end','')} | {camper.get('model','')} | {status}")
 
     # If telegram args provided, send notifications for any new offers (not in seen file)
     if args.telegram_token and chats:

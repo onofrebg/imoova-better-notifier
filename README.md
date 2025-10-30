@@ -62,6 +62,7 @@ python main.py
 - `--telegram-token`: Telegram bot token
 - `--telegram-chats`: Comma-separated list of Telegram chat IDs
 - `--seen-file`: Path to seen offers JSON file (default: `seen_offers.json`)
+- `-q, --quiet`: Suppress terminal messages for already notified campers
 
 Example with command line options:
 ```bash
