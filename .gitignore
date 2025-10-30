@@ -1,6 +1,7 @@
 # Sensitive data
 config.json
 .env
+seen_offers.json
 
 # Python
 __pycache__/
