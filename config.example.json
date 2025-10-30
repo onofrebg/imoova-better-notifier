@@ -1,5 +1,6 @@
 {
     "telegram_token": "YOUR_BOT_TOKEN_HERE",
     "telegram_chats": ["YOUR_CHAT_ID_HERE"],
-    "default_cities": ["city1","city2"]
+    "default_cities": ["city1","city2"],
+    "heartbeat_days": 7
 }

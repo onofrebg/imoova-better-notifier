@@ -41,7 +41,8 @@ cp config.example.json config.json
 {
     "telegram_token": "YOUR_BOT_TOKEN_HERE",
     "telegram_chats": ["YOUR_CHAT_ID_HERE"],
-    "default_cities": ["Madrid", "Barcelona", "Paris"]
+    "default_cities": ["Madrid", "Barcelona", "Paris"],
+    "heartbeat_days": 7
 }
 ```
 
@@ -74,6 +75,7 @@ You can also configure the script using environment variables:
 - `TELEGRAM_CHATS`: Comma-separated list of chat IDs
 - `DEFAULT_CITIES`: Comma-separated list of cities to monitor
 - `CONFIG_FILE`: Path to configuration file
+- `HEARTBEAT_DAYS`: Number of days between "still alive" messages (default: 7)
 
 ## Notification Format 📬
 
@@ -104,7 +106,8 @@ Duration: X days
 - Automatic retry mechanisms
 
 ### Alive Messages
-- Sends weekly "still alive" messages when no new offers are found
+- Sends configurable "still alive" messages when no new offers are found (default: every 7 days)
+- Configurable via `heartbeat_days` in config.json or `HEARTBEAT_DAYS` environment variable
 - Helps confirm the bot is still running and monitoring
 
 ## Disclaimer ⚠️

@@ -17,7 +17,8 @@ def load_config():
     config = {
         "telegram_token": os.getenv("TELEGRAM_TOKEN", ""),
         "telegram_chats": [c.strip() for c in os.getenv("TELEGRAM_CHATS", "").split(",") if c.strip()],
-        "default_cities": [c.strip() for c in os.getenv("DEFAULT_CITIES", "").split(",") if c.strip()]
+        "default_cities": [c.strip() for c in os.getenv("DEFAULT_CITIES", "").split(",") if c.strip()],
+        "heartbeat_days": int(os.getenv("HEARTBEAT_DAYS", "7"))
     }
     
     config_file = os.getenv("CONFIG_FILE", DEFAULT_CONFIG_FILE)
@@ -133,7 +134,7 @@ def get_last_message_time():
     except Exception:
         return None
 
-def check_and_send_alive_message(token: str, chats):
+def check_and_send_alive_message(token: str, chats, heartbeat_days=7):
     """Check if we need to send a 'still alive' message and send it if needed."""
     last_time = get_last_message_time()
     if last_time is None:
@@ -141,9 +142,9 @@ def check_and_send_alive_message(token: str, chats):
         return
     
     now = time.time()
-    week_ago = now - (7 * 24 * 60 * 60)  # 7 days in seconds
+    seconds_ago = now - (heartbeat_days * 24 * 60 * 60)  # Convert days to seconds
     
-    if last_time < week_ago:
+    if last_time < seconds_ago:
         text = "🤖 ¡Sigo vivo! No he encontrado nuevas ofertas de campers esta semana, pero sigo buscando."
         results = send_to_chats(token, chats, text)
         if any(ok for _, ok, _ in results):
@@ -252,7 +253,7 @@ if __name__ == "__main__":
     # If telegram args provided, send notifications for any new offers (not in seen file)
     if args.telegram_token and chats:
         # Check if we need to send a "still alive" message
-        check_and_send_alive_message(args.telegram_token, chats)
+        check_and_send_alive_message(args.telegram_token, chats, config.get("heartbeat_days", 7))
         
         seen = load_seen(args.seen_file)
         new = [c for c in filtered if c.get('id') and c.get('id') not in seen]
